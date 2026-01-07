@@ -49,10 +49,11 @@ class AudioService {
   }
 
   async speak(text: string, options: string[] = [], onEnd?: () => void) {
+    // جلب المفتاح في وقت التنفيذ لضمان الحصول على المفتاح المختار من قبل المستخدم
     const apiKey = process.env.API_KEY;
     
     if (!apiKey) {
-      console.error("TTS Error: API_KEY is missing. Please add it to your environment variables.");
+      console.warn("TTS Notice: API_KEY is missing. AI Voice will not play until a key is selected.");
       if (onEnd) onEnd();
       return;
     }
@@ -63,6 +64,7 @@ class AudioService {
       const ctx = this.initAudio();
       if (!ctx) throw new Error("AudioContext not available");
 
+      // إنشاء نسخة جديدة من GoogleGenAI لضمان استخدام أحدث مفتاح محقون
       const ai = new GoogleGenAI({ apiKey });
       
       let prompt = `${text}. `;
@@ -72,8 +74,6 @@ class AudioService {
           prompt += `${labels[i]}: ${opt}. `;
         });
       }
-
-      console.log("TTS: Requesting audio for prompt:", prompt.substring(0, 50) + "...");
 
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash-preview-tts",
@@ -105,13 +105,11 @@ class AudioService {
         };
         
         source.start();
-        console.log("TTS: Audio playback started successfully.");
       } else {
-        console.warn("TTS: No audio data received from API.");
         if (onEnd) onEnd();
       }
     } catch (e: any) {
-      console.error("TTS Critical Error:", e.message || e);
+      console.error("TTS Error:", e.message);
       if (onEnd) onEnd();
     }
   }
@@ -126,7 +124,6 @@ class AudioService {
   }
 
   private async decodeAudioData(data: Uint8Array, ctx: AudioContext, sampleRate: number, numChannels: number): Promise<AudioBuffer> {
-    // استخدام byteOffset و byteLength لضمان التوافق مع محاذاة الذاكرة (Memory Alignment)
     const dataInt16 = new Int16Array(data.buffer, data.byteOffset, data.byteLength / 2);
     const frameCount = dataInt16.length / numChannels;
     const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);

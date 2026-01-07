@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface WelcomeScreenProps {
   onStart: () => void;
@@ -8,6 +8,25 @@ interface WelcomeScreenProps {
 }
 
 const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStart, onAbout, onHowToPlay }) => {
+  const [hasKey, setHasKey] = useState(true);
+
+  useEffect(() => {
+    const checkKey = async () => {
+      // التحقق من وجود مفتاح محقون أو مفتاح تم اختياره مسبقاً
+      const selected = await (window as any).aistudio?.hasSelectedApiKey?.();
+      setHasKey(!!process.env.API_KEY || !!selected);
+    };
+    checkKey();
+  }, []);
+
+  const handleEnableAI = async () => {
+    if ((window as any).aistudio?.openSelectKey) {
+      await (window as any).aistudio.openSelectKey();
+      // نفترض النجاح لاستكمال التجربة
+      setHasKey(true);
+    }
+  };
+
   return (
     <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-orange-50 overflow-hidden relative">
       {/* Decorative burger elements */}
@@ -35,7 +54,17 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStart, onAbout, onHowTo
         <p className="text-orange-500">اجمعها لتصنع الهامبورجر المثالي!</p>
       </div>
       
-      <div className="flex flex-col gap-4 w-full max-w-xs mb-12">
+      <div className="flex flex-col gap-4 w-full max-w-xs mb-12 z-20">
+        {!hasKey && (
+          <button 
+            onClick={handleEnableAI}
+            className="group relative px-8 py-4 bg-yellow-400 text-orange-900 font-black text-lg rounded-2xl shadow-lg border-2 border-yellow-500 hover:bg-yellow-500 transition-all flex items-center justify-center gap-2 animate-pulse"
+          >
+            <span>🔑</span>
+            تفعيل الصوت والذكاء الاصطناعي
+          </button>
+        )}
+
         <button 
           onClick={onStart}
           className="group relative px-12 py-5 bg-orange-500 text-white font-bold text-2xl rounded-2xl shadow-xl shadow-orange-200 hover:bg-orange-600 active:scale-95 transition-all"
@@ -56,13 +85,14 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStart, onAbout, onHowTo
       </div>
       
       <div className="flex flex-col items-center gap-3 w-full max-w-xs">
+        {!hasKey && (
+          <p className="text-[10px] text-red-500 font-black mb-2">
+            ملاحظة: يجب تفعيل المفتاح أعلاه لسماع نطق الأسئلة ورؤية الصور.
+          </p>
+        )}
         <div className="bg-white/60 w-full px-4 py-2 rounded-2xl border border-orange-100 shadow-sm text-slate-600 font-black text-[13px] flex items-center justify-center gap-3 animate-in fade-in slide-in-from-bottom-2 duration-500">
           <span className="text-lg">📶</span>
           <span>3 مستويات (مبتدئ، متوسط، محترف)</span>
-        </div>
-        <div className="bg-white/60 w-full px-4 py-2 rounded-2xl border border-orange-100 shadow-sm text-slate-600 font-black text-[13px] flex items-center justify-center gap-3 animate-in fade-in slide-in-from-bottom-2 duration-700">
-          <span className="text-lg">📝</span>
-          <span>300 سؤال متنوع وتفاعلي</span>
         </div>
         
         <button 
