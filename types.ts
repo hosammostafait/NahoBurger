@@ -1,5 +1,5 @@
 
-export type Screen = 'LOGIN' | 'STORY' | 'MAP' | 'LESSON_INTRO' | 'QUIZ' | 'RESULT' | 'FINAL' | 'LEADERBOARD' | 'MEMORY_GAME' | 'GUESS_NUMBER' | 'WORD_SEARCH' | 'REPORT';
+export type Screen = 'WELCOME' | 'ABOUT' | 'LOGIN' | 'STORY' | 'MAP' | 'LESSON_INTRO' | 'QUIZ' | 'RESULT' | 'FINAL' | 'LEADERBOARD' | 'MEMORY_GAME' | 'GUESS_NUMBER' | 'WORD_SEARCH' | 'REPORT';
 
 export type Gender = 'boy' | 'girl';
 export type Difficulty = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';

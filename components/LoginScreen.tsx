@@ -5,9 +5,10 @@ import { Gender, Difficulty } from '../types';
 interface LoginScreenProps {
   onLogin: (username: string, gender: Gender, difficulty: Difficulty) => void;
   onViewLeaderboard: () => void;
+  onAbout: () => void;
 }
 
-const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onViewLeaderboard }) => {
+const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onViewLeaderboard, onAbout }) => {
   const [name, setName] = useState('');
   const [gender, setGender] = useState<Gender | null>(null);
   const [difficulty, setDifficulty] = useState<Difficulty | null>(null);
@@ -18,7 +19,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onViewLeaderboard })
     if (name.trim().length >= 2 && gender && difficulty) {
       setIsLoading(true);
       await onLogin(name.trim(), gender, difficulty);
-      // التحميل يتم في الـ App Component ولكننا نظهر الـ UI هنا
     }
   };
 
@@ -32,22 +32,33 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onViewLeaderboard })
     <div className="flex-1 flex flex-col items-center justify-center p-8 bg-gradient-to-b from-orange-50 to-white overflow-y-auto relative">
       <div className="absolute top-[-50px] right-[-50px] w-64 h-64 bg-yellow-100 rounded-full blur-3xl opacity-60"></div>
       
+      <button 
+        onClick={onAbout}
+        className="absolute top-6 left-6 w-10 h-10 bg-white rounded-full shadow-sm flex items-center justify-center text-slate-400 hover:text-orange-500 hover:scale-110 transition-all font-bold border border-slate-100 z-50"
+      >
+        ℹ️
+      </button>
+
       <div className="z-10 w-full max-w-sm py-10">
         <div className="text-center mb-10">
           <div className="text-7xl mb-4 animate-bounce">🍔</div>
           <h1 className="text-4xl font-black text-slate-800 mb-2">الهامبورجر الخطير</h1>
           <p className="text-slate-500 font-bold">رحلة احتراف النحو العربي</p>
-          <div className="mt-2 inline-flex items-center gap-2 bg-orange-100 px-3 py-1 rounded-full border border-orange-200">
-            <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
-            <span className="text-[10px] font-black text-orange-700 uppercase tracking-widest">تخزين سحابي عالمي 🌐</span>
-          </div>
+          <button 
+            type="button"
+            onClick={onViewLeaderboard}
+            className="mt-3 inline-flex items-center gap-2 bg-yellow-100 hover:bg-yellow-200 px-4 py-1.5 rounded-full border border-yellow-300 transition-colors group"
+          >
+            <span className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></span>
+            <span className="text-[10px] font-black text-yellow-800 uppercase tracking-widest">لوحة شرف للمتصدرين 🏆</span>
+          </button>
         </div>
 
         {isLoading ? (
           <div className="py-20 flex flex-col items-center justify-center gap-6 animate-in fade-in zoom-in">
             <div className="w-20 h-20 border-8 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
             <div className="text-center">
-              <p className="text-xl font-black text-orange-600">جاري البحث عن حسابك...</p>
+              <p className="text-xl font-black text-orange-600">جاري تجهيز المطبخ...</p>
               <p className="text-sm font-bold text-slate-400 mt-1">يتم جلب بيانات التقدم من السحاب</p>
             </div>
           </div>
@@ -118,12 +129,20 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onViewLeaderboard })
           </form>
         )}
 
-        <button 
-          onClick={onViewLeaderboard}
-          className="w-full mt-6 py-3 text-orange-600 font-black flex items-center justify-center gap-2 hover:bg-orange-50 rounded-2xl transition-all"
-        >
-          🏆 قائمة أمهر الطباخين
-        </button>
+        <div className="mt-8 flex flex-col items-center gap-3">
+            <button 
+              onClick={onViewLeaderboard}
+              className="text-orange-600 font-black text-sm flex items-center gap-2 hover:bg-orange-50 px-4 py-2 rounded-xl transition-all"
+            >
+              🏆 قائمة أمهر الطباخين
+            </button>
+            <button 
+              onClick={onAbout}
+              className="text-slate-400 font-bold text-[10px] hover:text-slate-600 transition-colors"
+            >
+              عن التطبيق والمطور
+            </button>
+        </div>
       </div>
     </div>
   );

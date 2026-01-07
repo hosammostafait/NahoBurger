@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Station, Question, QuizAttempt } from '../types';
+import { audioService } from '../services/audioService';
 
 interface QuizEngineProps {
   station: Station;
@@ -20,20 +21,25 @@ const QuizEngine: React.FC<QuizEngineProps> = ({ station, onComplete, onBack }) 
   const [isAnswered, setIsAnswered] = useState(false);
   const [score, setScore] = useState(0);
   const [attempts, setAttempts] = useState<QuizAttempt[]>([]);
+  const [isSpeaking, setIsSpeaking] = useState(false);
 
   const currentQuestion = station.questions[currentIndex];
 
-  // Shuffles options whenever the current question index changes
   useEffect(() => {
     const optionsWithIndices = currentQuestion.options.map((text, index) => ({
       text,
       originalIndex: index
     }));
-    
-    // Shuffling using Math.random
     const shuffled = [...optionsWithIndices].sort(() => Math.random() - 0.5);
     setShuffledOptions(shuffled);
   }, [currentIndex, currentQuestion]);
+
+  const handleSpeak = async () => {
+    if (isSpeaking) return;
+    setIsSpeaking(true);
+    await audioService.speak(currentQuestion.text);
+    setTimeout(() => setIsSpeaking(false), 3000);
+  };
 
   const handleOptionClick = (shuffledIdx: number) => {
     if (isAnswered) return;
@@ -44,7 +50,10 @@ const QuizEngine: React.FC<QuizEngineProps> = ({ station, onComplete, onBack }) 
     
     const isCorrect = originalIdx === currentQuestion.correctAnswer;
     if (isCorrect) {
+      audioService.playCorrect();
       setScore(prev => prev + 10);
+    } else {
+      audioService.playWrong();
     }
 
     const attempt: QuizAttempt = {
@@ -62,6 +71,7 @@ const QuizEngine: React.FC<QuizEngineProps> = ({ station, onComplete, onBack }) 
   };
 
   const nextQuestion = () => {
+    audioService.playClick();
     if (currentIndex < station.questions.length - 1) {
       setCurrentIndex(prev => prev + 1);
       setSelectedOption(null);
@@ -75,7 +85,6 @@ const QuizEngine: React.FC<QuizEngineProps> = ({ station, onComplete, onBack }) 
 
   return (
     <div className="flex-1 flex flex-col bg-white">
-      {/* Header */}
       <div className="p-4 border-b border-orange-100 flex items-center justify-between">
         <button 
           onClick={onBack}
@@ -96,20 +105,21 @@ const QuizEngine: React.FC<QuizEngineProps> = ({ station, onComplete, onBack }) 
         <div 
           className="h-full bg-orange-500 transition-all duration-700 ease-out relative shadow-[0_0_15px_rgba(249,115,22,0.6)]"
           style={{ width: `${progress}%` }}
-        >
-          {/* Subtle shine animation overlay */}
-          <div 
-            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-[shimmer_2s_infinite]" 
-            style={{ backgroundSize: '200% 100%', width: '100%', height: '100%' }}
-          ></div>
-        </div>
+        />
       </div>
 
       <div className="flex-1 p-6 flex flex-col overflow-y-auto">
-        <div className="mb-8">
-          <h3 className="text-2xl font-black text-slate-800 leading-snug">
+        <div className="mb-8 flex items-start gap-4">
+          <h3 className="text-2xl font-black text-slate-800 leading-snug flex-1">
             {currentQuestion.text}
           </h3>
+          <button 
+            onClick={handleSpeak}
+            className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition-all shadow-md ${isSpeaking ? 'bg-orange-100 text-orange-600 animate-pulse' : 'bg-white text-slate-400 hover:text-orange-500'}`}
+            title="استمع للسؤال"
+          >
+            {isSpeaking ? '🔊' : '🔈'}
+          </button>
         </div>
 
         <div className="space-y-3 flex-1">

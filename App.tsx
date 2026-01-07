@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { getStationsByDifficulty } from './data/questions';
 import { Screen, Progress, Station, Gender, QuizAttempt, Difficulty } from './types';
 import { cloudService } from './services/cloudDb';
+import { audioService } from './services/audioService';
 import MapScreen from './components/MapScreen';
 import QuizEngine from './components/QuizEngine';
 import ResultScreen from './components/ResultScreen';
@@ -15,9 +16,12 @@ import GuessNumber from './components/GuessNumber';
 import WordSearch from './components/WordSearch';
 import ReportScreen from './components/ReportScreen';
 import LessonIntro from './components/LessonIntro';
+import BurgerProgress from './components/BurgerProgress';
+import WelcomeScreen from './components/WelcomeScreen';
+import AboutScreen from './components/AboutScreen';
 
 const App: React.FC = () => {
-  const [currentScreen, setCurrentScreen] = useState<Screen>('LOGIN');
+  const [currentScreen, setCurrentScreen] = useState<Screen>('WELCOME');
   const [username, setUsername] = useState<string>('');
   const [gender, setGender] = useState<Gender>('boy');
   const [difficulty, setDifficulty] = useState<Difficulty>('BEGINNER');
@@ -31,6 +35,7 @@ const App: React.FC = () => {
   const currentStations = getStationsByDifficulty(difficulty);
 
   const handleLogin = async (name: string, userGender: Gender, userDiff: Difficulty) => {
+    audioService.playClick();
     setIsSyncing(true);
     try {
       const cloudData = await cloudService.fetchUser(name);
@@ -64,7 +69,7 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
-    if (username) {
+    if (username && currentScreen !== 'WELCOME' && currentScreen !== 'LOGIN' && currentScreen !== 'ABOUT') {
       const sync = async () => {
         setIsSyncing(true);
         const success = await cloudService.saveUser(username, { gender, difficulty, progress, history });
@@ -76,6 +81,7 @@ const App: React.FC = () => {
   }, [progress, history]);
 
   const selectStation = (stationId: number) => {
+    audioService.playClick();
     const canUnlock = stationId === 1 || progress.completedStations.includes(stationId - 1);
     if (canUnlock) {
       const station = currentStations.find(s => s.id === stationId);
@@ -88,6 +94,7 @@ const App: React.FC = () => {
 
   const handleQuizComplete = (score: number, stationHistory: QuizAttempt[]) => {
     if (!activeStation) return;
+    audioService.playSuccess();
     setLastQuizResult({ score, total: 100 });
     setHistory(prev => [...prev, ...stationHistory]);
     const isAlreadyCompleted = progress.completedStations.includes(activeStation.id);
@@ -98,6 +105,7 @@ const App: React.FC = () => {
   };
 
   const handleNextSteps = () => {
+    audioService.playClick();
     if (!activeStation) return;
     const sid = activeStation.id;
     setActiveStation(null);
@@ -110,42 +118,48 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen max-w-2xl mx-auto flex flex-col shadow-2xl bg-white border-x border-orange-100 relative">
-      {username && (
-        <div className="absolute top-4 left-4 z-[100] flex items-center gap-2">
-          <div className={`px-2.5 py-1 rounded-full text-[9px] font-black flex items-center gap-2 shadow-md transition-all border ${
-            cloudStatus === 'online' ? 'bg-white border-green-200 text-green-600' : 'bg-white border-orange-200 text-orange-600'
-          }`}>
-            <span className={`w-2 h-2 rounded-full ${isSyncing ? 'animate-pulse bg-blue-500' : cloudStatus === 'online' ? 'bg-green-500' : 'bg-orange-500'}`}></span>
-            {isSyncing ? 'جاري الحفظ...' : cloudStatus === 'online' ? 'تم الحفظ في فايربيز ✨' : 'حفظ محلي فقط'}
+      {/* مؤشر المزامنة */}
+      {username && currentScreen !== 'WELCOME' && currentScreen !== 'LOGIN' && currentScreen !== 'ABOUT' && (
+        <div className="fixed bottom-4 left-4 z-[200]">
+           <div className={`p-2 rounded-full shadow-lg border-2 transition-all flex items-center justify-center bg-white ${
+            cloudStatus === 'online' ? 'border-green-200' : 'border-orange-200'
+          }`} title={cloudStatus === 'online' ? 'تم الحفظ سحابياً' : 'حفظ محلي'}>
+            <div className={`w-3 h-3 rounded-full ${isSyncing ? 'animate-pulse bg-blue-500' : cloudStatus === 'online' ? 'bg-green-500' : 'bg-orange-500'}`}></div>
           </div>
         </div>
       )}
 
-      {currentScreen === 'LOGIN' && <LoginScreen onLogin={handleLogin} onViewLeaderboard={() => setCurrentScreen('LEADERBOARD')} />}
-      {currentScreen === 'STORY' && <StoryScreen username={username} gender={gender} onNext={() => setCurrentScreen('MAP')} />}
-      {currentScreen === 'LEADERBOARD' && <Leaderboard onBack={() => username ? (progress.completedStations.length === currentStations.length ? setCurrentScreen('FINAL') : setCurrentScreen('MAP')) : setCurrentScreen('LOGIN')} />}
-      {currentScreen === 'MEMORY_GAME' && <MemoryGame onComplete={() => setCurrentScreen('MAP')} />}
-      {currentScreen === 'GUESS_NUMBER' && <GuessNumber onComplete={() => setCurrentScreen('MAP')} />}
-      {currentScreen === 'WORD_SEARCH' && <WordSearch onComplete={() => setCurrentScreen('MAP')} />}
-      {currentScreen === 'REPORT' && <ReportScreen history={history} onBack={() => setCurrentScreen('FINAL')} />}
-      {currentScreen === 'LESSON_INTRO' && activeStation && <LessonIntro station={activeStation} gender={gender} onStart={() => setCurrentScreen('QUIZ')} />}
+      {currentScreen === 'WELCOME' && <WelcomeScreen onStart={() => setCurrentScreen('LOGIN')} onAbout={() => setCurrentScreen('ABOUT')} />}
+      {currentScreen === 'ABOUT' && <AboutScreen onBack={() => setCurrentScreen('WELCOME')} />}
+      {currentScreen === 'LOGIN' && <LoginScreen onLogin={handleLogin} onViewLeaderboard={() => { audioService.playClick(); setCurrentScreen('LEADERBOARD'); }} onAbout={() => setCurrentScreen('ABOUT')} />}
+      {currentScreen === 'STORY' && <StoryScreen username={username} gender={gender} onNext={() => { audioService.playClick(); setCurrentScreen('MAP'); }} />}
+      {currentScreen === 'LEADERBOARD' && <Leaderboard onBack={() => { audioService.playClick(); username ? (progress.completedStations.length === currentStations.length ? setCurrentScreen('FINAL') : setCurrentScreen('MAP')) : setCurrentScreen('LOGIN'); }} />}
+      {currentScreen === 'MEMORY_GAME' && <MemoryGame onComplete={() => { audioService.playSuccess(); setCurrentScreen('MAP'); }} />}
+      {currentScreen === 'GUESS_NUMBER' && <GuessNumber onComplete={() => { audioService.playSuccess(); setCurrentScreen('MAP'); }} />}
+      {currentScreen === 'WORD_SEARCH' && <WordSearch onComplete={() => { audioService.playSuccess(); setCurrentScreen('MAP'); }} />}
+      {currentScreen === 'REPORT' && <ReportScreen history={history} onBack={() => { audioService.playClick(); setCurrentScreen('FINAL'); }} />}
+      {currentScreen === 'LESSON_INTRO' && activeStation && <LessonIntro station={activeStation} gender={gender} onStart={() => { audioService.playClick(); setCurrentScreen('QUIZ'); }} />}
       {currentScreen === 'MAP' && (
         <>
-          <div className="bg-slate-800 text-white px-4 py-2 flex justify-between items-center text-[10px] font-bold">
-            <div className="flex items-center gap-2">
-              <span className="text-yellow-400">{username} ({difficulty === 'BEGINNER' ? 'مبتدئ' : difficulty === 'INTERMEDIATE' ? 'متوسط' : 'محترف'})</span>
+          <div className="bg-slate-800 text-white px-4 py-3 flex justify-between items-center text-[11px] font-bold sticky top-0 z-[110] shadow-md">
+            <div className="flex items-center gap-3">
+              <BurgerProgress completedCount={progress.completedStations.length} totalCount={currentStations.length} />
+              <div className="flex flex-col">
+                 <span className="text-yellow-400">👤 {username}</span>
+                 <span className="bg-slate-700 px-2 py-0.5 rounded text-[8px] w-fit mt-0.5">{difficulty === 'BEGINNER' ? 'مبتدئ' : difficulty === 'INTERMEDIATE' ? 'متوسط' : 'محترف'}</span>
+              </div>
             </div>
             <div className="flex gap-4">
-              <button onClick={() => setCurrentScreen('LEADERBOARD')} className="text-yellow-400">🏆 المتصدرون</button>
-              <button onClick={() => window.location.reload()} className="text-orange-300">خروج ←</button>
+              <button onClick={() => { audioService.playClick(); setCurrentScreen('LEADERBOARD'); }} className="text-yellow-400 hover:scale-105 transition-transform flex items-center gap-1">🏆 المتصدرون</button>
+              <button onClick={() => { audioService.playClick(); window.location.reload(); }} className="text-orange-300 hover:scale-105 transition-transform">خروج ←</button>
             </div>
           </div>
           <MapScreen stations={currentStations} progress={progress} onSelectStation={selectStation} />
         </>
       )}
-      {currentScreen === 'QUIZ' && activeStation && <QuizEngine station={activeStation} onComplete={handleQuizComplete} onBack={() => setCurrentScreen('MAP')} />}
+      {currentScreen === 'QUIZ' && activeStation && <QuizEngine station={activeStation} onComplete={handleQuizComplete} onBack={() => { audioService.playClick(); setCurrentScreen('MAP'); }} />}
       {currentScreen === 'RESULT' && activeStation && lastQuizResult && <ResultScreen score={lastQuizResult.score} station={activeStation} onContinue={handleNextSteps} />}
-      {currentScreen === 'FINAL' && <FinalScreen username={username} gender={gender} onViewLeaderboard={() => setCurrentScreen('LEADERBOARD')} onViewReport={() => setCurrentScreen('REPORT')} onReset={() => window.location.reload()} />}
+      {currentScreen === 'FINAL' && <FinalScreen username={username} gender={gender} onViewLeaderboard={() => { audioService.playClick(); setCurrentScreen('LEADERBOARD'); }} onViewReport={() => { audioService.playClick(); setCurrentScreen('REPORT'); }} onReset={() => { audioService.playClick(); window.location.reload(); }} />}
     </div>
   );
 };
