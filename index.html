@@ -7,6 +7,12 @@
     <title>الهامبورجر الخطير - رحلة النحو</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+    <script>
+      // تعريف بسيط لتجنب أخطاء المتصفح عند قراءة مفتاح الذكاء الاصطناعي
+      if (typeof window !== 'undefined') {
+        window.process = { env: { API_KEY: "" } };
+      }
+    </script>
     <style>
       body {
         font-family: 'Tajawal', sans-serif;
@@ -43,5 +49,7 @@
 </head>
   <body class="bg-slate-50 text-slate-800 antialiased overflow-x-hidden selection:bg-orange-100 selection:text-orange-900">
     <div id="root"></div>
+    <!-- هذا السطر هو المحرك الأساسي الذي كان ناقصاً لتشغيل التطبيق -->
+    <script type="module" src="index.tsx"></script>
   </body>
 </html>
