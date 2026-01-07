@@ -15,22 +15,25 @@ const StoryScreen: React.FC<StoryScreenProps> = ({ username, gender, onNext }) =
   useEffect(() => {
     const generateKitchen = async () => {
       try {
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        const apiKey = process.env.API_KEY;
+        if (!apiKey) {
+          setLoading(false);
+          return;
+        }
+        
+        const ai = new GoogleGenAI({ apiKey });
         const prompt = "A magical, hyper-realistic 3D cartoon master chef kitchen for children, glowing ingredients, golden light, high details, Pixar style, warm colors, Arabic culinary theme.";
         const response = await ai.models.generateContent({
           model: 'gemini-2.5-flash-image',
           contents: { parts: [{ text: prompt }] }
         });
         
-        for (const part of response.candidates[0].content.parts) {
-          if (part.inlineData) {
-            setKitchenImageUrl(`data:image/png;base64,${part.inlineData.data}`);
-            break;
-          }
+        const part = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+        if (part?.inlineData) {
+          setKitchenImageUrl(`data:image/png;base64,${part.inlineData.data}`);
         }
       } catch (e) { 
         console.warn("AI Visuals error:", e);
-        setKitchenImageUrl(null);
       } finally { 
         setLoading(false); 
       }

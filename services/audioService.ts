@@ -4,8 +4,7 @@ const SOUNDS = {
   CLICK: 'https://actions.google.com/sounds/v1/buttons/light_switch_on.ogg',
   CORRECT: 'https://actions.google.com/sounds/v1/cartoon/pop.ogg',
   WRONG: 'https://actions.google.com/sounds/v1/cartoon/wood_plank_flick.ogg',
-  SUCCESS: 'https://actions.google.com/sounds/v1/cartoon/clime_up_the_ladder.ogg',
-  TRANSITION: 'https://actions.google.com/sounds/v1/cartoon/concussive_hit_guitar_accent.ogg'
+  SUCCESS: 'https://actions.google.com/sounds/v1/cartoon/clime_up_the_ladder.ogg'
 };
 
 class AudioService {
@@ -49,9 +48,7 @@ class AudioService {
 
   async speak(text: string, options: string[] = [], onEnd?: () => void) {
     const apiKey = process.env.API_KEY;
-    
     if (!apiKey) {
-      console.error("API_KEY is missing");
       if (onEnd) onEnd();
       return;
     }
@@ -63,7 +60,6 @@ class AudioService {
       if (!ctx) throw new Error("AudioContext not available");
 
       const ai = new GoogleGenAI({ apiKey });
-      
       let prompt = `${text}. `;
       if (options.length > 0) {
         const labels = ['أ', 'ب', 'ج', 'د'];
@@ -86,8 +82,8 @@ class AudioService {
       const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
       
       if (base64Audio) {
-        const audioData = this.base64ToUint8Array(base64Audio);
-        const audioBuffer = await this.decodeAudioData(audioData, ctx, 24000, 1);
+        const audioData = this.decodeBase64Custom(base64Audio);
+        const audioBuffer = await this.decodeAudioDataManual(audioData, ctx, 24000, 1);
         
         const source = ctx.createBufferSource();
         source.buffer = audioBuffer;
@@ -100,31 +96,30 @@ class AudioService {
             if (onEnd) onEnd();
           }
         };
-        
         source.start();
       } else {
         if (onEnd) onEnd();
       }
-    } catch (e: any) {
-      console.error("TTS Error:", e.message);
+    } catch (e) {
+      console.error("TTS Error:", e);
       if (onEnd) onEnd();
     }
   }
 
-  private base64ToUint8Array(base64: string) {
-    const binary = atob(base64);
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) {
-      bytes[i] = binary.charCodeAt(i);
+  private decodeBase64Custom(base64: string) {
+    const binaryString = atob(base64);
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
     }
     return bytes;
   }
 
-  private async decodeAudioData(data: Uint8Array, ctx: AudioContext, sampleRate: number, numChannels: number): Promise<AudioBuffer> {
-    const dataInt16 = new Int16Array(data.buffer, data.byteOffset, data.byteLength / 2);
+  private async decodeAudioDataManual(data: Uint8Array, ctx: AudioContext, sampleRate: number, numChannels: number): Promise<AudioBuffer> {
+    const dataInt16 = new Int16Array(data.buffer);
     const frameCount = dataInt16.length / numChannels;
     const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);
-    
     for (let channel = 0; channel < numChannels; channel++) {
       const channelData = buffer.getChannelData(channel);
       for (let i = 0; i < frameCount; i++) {
