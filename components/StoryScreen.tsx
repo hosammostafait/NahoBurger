@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { GoogleGenAI } from "@google/genai";
 import { Gender } from '../types';
@@ -30,7 +29,7 @@ const StoryScreen: React.FC<StoryScreenProps> = ({ username, gender, onNext }) =
           }
         }
       } catch (e) { 
-        console.warn("AI Visuals error (likely restriction): using placeholder.");
+        console.warn("AI Visuals error:", e);
         setKitchenImageUrl(null);
       } finally { 
         setLoading(false); 
@@ -49,7 +48,7 @@ const StoryScreen: React.FC<StoryScreenProps> = ({ username, gender, onNext }) =
           </div>
         ) : (
           <div className="animate-in fade-in zoom-in duration-700 max-w-lg mx-auto">
-            <div className="relative mb-8 rounded-[40px] overflow-hidden shadow-2xl border-8 border-orange-50 transform -rotate-1 min-h-[250px] flex items-center justify-center bg-orange-50">
+            <div className="relative mb-8 rounded-[40px] overflow-hidden shadow-2xl border-8 border-orange-5 transform -rotate-1 min-h-[250px] flex items-center justify-center bg-orange-50">
               {kitchenImageUrl ? (
                 <img src={kitchenImageUrl} alt="Kitchen" className="w-full aspect-video object-cover" />
               ) : (

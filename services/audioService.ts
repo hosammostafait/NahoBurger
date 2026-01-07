@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Modality } from "@google/genai";
 
 const SOUNDS = {
@@ -52,7 +51,7 @@ class AudioService {
     const apiKey = process.env.API_KEY;
     
     if (!apiKey) {
-      console.error("API_KEY is missing in process.env");
+      console.error("API_KEY is missing");
       if (onEnd) onEnd();
       return;
     }
