@@ -49,11 +49,10 @@ class AudioService {
   }
 
   async speak(text: string, options: string[] = [], onEnd?: () => void) {
-    // جلب المفتاح في وقت التنفيذ لضمان الحصول على المفتاح المختار من قبل المستخدم
     const apiKey = process.env.API_KEY;
     
     if (!apiKey) {
-      console.warn("TTS Notice: API_KEY is missing. AI Voice will not play until a key is selected.");
+      console.error("API_KEY is missing in process.env");
       if (onEnd) onEnd();
       return;
     }
@@ -64,7 +63,6 @@ class AudioService {
       const ctx = this.initAudio();
       if (!ctx) throw new Error("AudioContext not available");
 
-      // إنشاء نسخة جديدة من GoogleGenAI لضمان استخدام أحدث مفتاح محقون
       const ai = new GoogleGenAI({ apiKey });
       
       let prompt = `${text}. `;
