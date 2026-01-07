@@ -11,8 +11,9 @@ const SOUNDS = {
 
 class AudioService {
   private audioCtx: AudioContext | null = null;
+  private currentSource: AudioBufferSourceNode | null = null;
 
-  private initAudio() {
+  initAudio() {
     if (!this.audioCtx) {
       this.audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
     }
@@ -33,20 +34,39 @@ class AudioService {
   playWrong() { this.play(SOUNDS.WRONG); }
   playSuccess() { this.play(SOUNDS.SUCCESS); }
 
-  async speak(text: string) {
-    if (!process.env.API_KEY) {
-      console.warn("API_KEY is missing. TTS will not work.");
-      return;
+  stop() {
+    if (this.currentSource) {
+      try {
+        this.currentSource.stop();
+      } catch (e) {}
+      this.currentSource = null;
     }
+  }
+
+  async speak(text: string, options: string[] = [], onEnd?: () => void) {
+    if (!process.env.API_KEY) return;
+
+    this.stop();
 
     try {
       const ctx = this.initAudio();
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      
+      // نصوص مختصرة جداً لسرعة التوليد
+      let prompt = `${text}. `;
+      if (options.length > 0) {
+        const labels = ['أ', 'ب', 'ج', 'د'];
+        options.forEach((opt, i) => {
+          prompt += `${labels[i]}: ${opt}. `;
+        });
+      }
+
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash-preview-tts",
-        contents: [{ parts: [{ text: `اقرأ السؤال التالي بوضوح للأطفال: ${text}` }] }],
+        contents: [{ parts: [{ text: prompt }] }],
         config: {
           responseModalities: [Modality.AUDIO],
+          // تمت إزالة thinkingConfig لأن موديل TTS لا يدعمه ويسبب خطأ 400
           speechConfig: {
             voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } },
           },
@@ -57,13 +77,26 @@ class AudioService {
       if (base64Audio) {
         const audioData = this.base64ToUint8Array(base64Audio);
         const audioBuffer = await this.decodeAudioData(audioData, ctx, 24000, 1);
+        
         const source = ctx.createBufferSource();
         source.buffer = audioBuffer;
         source.connect(ctx.destination);
+        this.currentSource = source;
+        
+        source.onended = () => {
+          if (this.currentSource === source) {
+            this.currentSource = null;
+            if (onEnd) onEnd();
+          }
+        };
+        
         source.start();
+      } else if (onEnd) {
+        onEnd();
       }
     } catch (e) {
       console.error("TTS Error:", e);
+      if (onEnd) onEnd();
     }
   }
 

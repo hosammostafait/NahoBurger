@@ -21,7 +21,7 @@ const QuizEngine: React.FC<QuizEngineProps> = ({ station, onComplete, onBack }) 
   const [isAnswered, setIsAnswered] = useState(false);
   const [score, setScore] = useState(0);
   const [attempts, setAttempts] = useState<QuizAttempt[]>([]);
-  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [audioState, setAudioState] = useState<'idle' | 'loading' | 'playing'>('idle');
 
   const currentQuestion = station.questions[currentIndex];
 
@@ -35,14 +35,29 @@ const QuizEngine: React.FC<QuizEngineProps> = ({ station, onComplete, onBack }) 
   }, [currentIndex, currentQuestion]);
 
   const handleSpeak = async () => {
-    if (isSpeaking) return;
-    setIsSpeaking(true);
-    await audioService.speak(currentQuestion.text);
-    setTimeout(() => setIsSpeaking(false), 3000);
+    if (audioState === 'playing' || audioState === 'loading') {
+      audioService.stop();
+      setAudioState('idle');
+      return;
+    }
+    
+    setAudioState('loading');
+    const optionsTexts = shuffledOptions.map(o => o.text);
+    
+    await audioService.speak(
+      currentQuestion.text, 
+      optionsTexts, 
+      () => setAudioState('idle')
+    );
+    
+    setAudioState('playing');
   };
 
   const handleOptionClick = (shuffledIdx: number) => {
     if (isAnswered) return;
+    
+    audioService.stop();
+    setAudioState('idle');
     
     const originalIdx = shuffledOptions[shuffledIdx].originalIndex;
     setSelectedOption(shuffledIdx);
@@ -72,6 +87,8 @@ const QuizEngine: React.FC<QuizEngineProps> = ({ station, onComplete, onBack }) 
 
   const nextQuestion = () => {
     audioService.playClick();
+    audioService.stop();
+    setAudioState('idle');
     if (currentIndex < station.questions.length - 1) {
       setCurrentIndex(prev => prev + 1);
       setSelectedOption(null);
@@ -87,7 +104,7 @@ const QuizEngine: React.FC<QuizEngineProps> = ({ station, onComplete, onBack }) 
     <div className="flex-1 flex flex-col bg-white">
       <div className="p-4 border-b border-orange-100 flex items-center justify-between">
         <button 
-          onClick={onBack}
+          onClick={() => { audioService.stop(); onBack(); }}
           className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-orange-50 text-slate-500"
         >
           ✕
@@ -115,10 +132,15 @@ const QuizEngine: React.FC<QuizEngineProps> = ({ station, onComplete, onBack }) 
           </h3>
           <button 
             onClick={handleSpeak}
-            className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition-all shadow-md ${isSpeaking ? 'bg-orange-100 text-orange-600 animate-pulse' : 'bg-white text-slate-400 hover:text-orange-500'}`}
-            title="استمع للسؤال"
+            disabled={isAnswered}
+            className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition-all shadow-md ${
+              audioState === 'playing' ? 'bg-orange-500 text-white animate-pulse' : 
+              audioState === 'loading' ? 'bg-slate-100 text-orange-500 animate-spin' : 
+              'bg-white text-slate-400 hover:text-orange-500 border border-slate-100'
+            }`}
+            title="استمع للسؤال والخيارات"
           >
-            {isSpeaking ? '🔊' : '🔈'}
+            {audioState === 'loading' ? '⏳' : audioState === 'playing' ? '🔊' : '🔈'}
           </button>
         </div>
 

@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Station, Gender } from '../types';
+import { audioService } from '../services/audioService';
 
 interface LessonIntroProps {
   station: Station;
@@ -10,6 +11,13 @@ interface LessonIntroProps {
 
 const LessonIntro: React.FC<LessonIntroProps> = ({ station, gender, onStart }) => {
   const isBoy = gender === 'boy';
+
+  const handleStart = () => {
+    // Initialize audio context on user gesture
+    audioService.initAudio();
+    audioService.playClick();
+    onStart();
+  };
 
   return (
     <div className="flex-1 flex flex-col bg-white overflow-y-auto">
@@ -48,7 +56,7 @@ const LessonIntro: React.FC<LessonIntroProps> = ({ station, gender, onStart }) =
 
       <div className="p-8 bg-slate-50 border-t border-slate-100 sticky bottom-0">
         <button
-          onClick={onStart}
+          onClick={handleStart}
           className="w-full py-5 bg-orange-500 text-white font-black text-2xl rounded-[25px] shadow-xl shadow-orange-100 hover:bg-orange-600 active:scale-95 transition-all"
         >
           {isBoy ? 'جاهز للتحدي! 💪' : 'جاهزة للتحدي! 💪'}
