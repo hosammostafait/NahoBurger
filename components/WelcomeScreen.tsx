@@ -9,33 +9,26 @@ interface WelcomeScreenProps {
 
 const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStart, onAbout, onHowToPlay }) => {
   const [hasKey, setHasKey] = useState(true);
-  const [debugInfo, setDebugInfo] = useState("");
+  const [keySource, setKeySource] = useState("");
 
   useEffect(() => {
     const checkKey = async () => {
       const aiStudio = (window as any).aistudio;
       const selected = await aiStudio?.hasSelectedApiKey?.();
       
-      // محاولة العثور على المفتاح من مصادر مختلفة
-      const envKey = process.env.API_KEY || (window as any).process?.env?.API_KEY;
+      // التحقق من وجود المفتاح في بيئة التشغيل
+      const envKey = process.env.API_KEY;
       const keyExists = !!envKey || !!selected;
       
       setHasKey(keyExists);
-
-      if (!keyExists) {
-        if (!aiStudio) {
-          setDebugInfo("يجب ضبط API_KEY في إعدادات Netlify ليعمل الصوت.");
-        } else {
-          setDebugInfo("يرجى الضغط على زر التفعيل واختيار المفتاح.");
-        }
-      }
+      if (envKey) setKeySource("تم العثور على المفتاح في إعدادات نيتلفاي ✅");
+      else if (selected) setKeySource("تم اختيار المفتاح من AI Studio ✅");
     };
     checkKey();
   }, []);
 
   const handleEnableAI = async () => {
     const aiStudio = (window as any).aistudio;
-    
     if (aiStudio?.openSelectKey) {
       try {
         await aiStudio.openSelectKey();
@@ -44,14 +37,12 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStart, onAbout, onHowTo
         console.error("Selection Error:", err);
       }
     } else {
-      // رسالة توضيحية بناءً على الصورة التي أرسلتها
-      alert("⚠️ تنبيه هام:\n\nلقد أظهرت الصورة أنك وضعت المفتاح كـ 'اسم' بدلاً من 'قيمة'.\n\nللإصلاح:\n1. في Netlify اجعل الاسم: API_KEY\n2. اجعل القيمة: الكود الذي يبدأ بـ AIzaSy\n3. اضغط Trigger Deploy مع Clear Cache.\n\nبدون هذه الخطوات، لن يعمل الذكاء الاصطناعي خارج بيئة AI Studio.");
+      alert("⚠️ للتخلص من هذه الرسالة على Netlify:\n1. تأكد من إعداد API_KEY في Environment Variables.\n2. تأكد من عمل Trigger Deploy -> Clear Cache.\n\nإذا كنت تستخدم الهاتف، جرب متصفح الكمبيوتر.");
     }
   };
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-orange-50 overflow-hidden relative">
-      {/* Decorative elements */}
       <div className="absolute top-10 -right-10 w-40 h-40 bg-orange-200 rounded-full blur-3xl opacity-50"></div>
       <div className="absolute bottom-10 -left-10 w-40 h-40 bg-yellow-200 rounded-full blur-3xl opacity-50"></div>
       
@@ -70,7 +61,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStart, onAbout, onHowTo
         الهامبورجر <span className="text-yellow-600">الخطير</span>
       </h1>
       
-      <div className="text-xl text-slate-600 mb-12 font-bold leading-relaxed max-w-sm">
+      <div className="text-xl text-slate-600 mb-12 font-bold max-w-sm">
         <p>اجمع المكونات لتصنع الهامبورجر المثالي!</p>
       </div>
       
@@ -80,8 +71,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStart, onAbout, onHowTo
             onClick={handleEnableAI}
             className="group relative px-8 py-4 bg-yellow-400 text-orange-900 font-black text-lg rounded-2xl shadow-lg border-2 border-yellow-500 hover:bg-yellow-500 transition-all flex items-center justify-center gap-2 animate-pulse"
           >
-            <span>🔑</span>
-            تفعيل الذكاء الاصطناعي
+            <span>🔑</span> تفعيل الصوت والصور
           </button>
         )}
 
@@ -101,11 +91,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStart, onAbout, onHowTo
       </div>
       
       <div className="flex flex-col items-center gap-3 w-full max-w-xs">
-        {!hasKey && (
-          <div className="bg-red-50 text-red-600 p-3 rounded-xl border border-red-100 text-[10px] font-bold">
-            <p>🚫 {debugInfo}</p>
-          </div>
-        )}
+        {keySource && <p className="text-[10px] text-green-600 font-bold">{keySource}</p>}
         <div className="bg-white/60 w-full px-4 py-2 rounded-2xl border border-orange-100 shadow-sm text-slate-600 font-black text-[13px]">
           <span>3 مستويات احترافية 📶</span>
         </div>
