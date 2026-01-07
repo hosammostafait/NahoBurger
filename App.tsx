@@ -19,6 +19,7 @@ import LessonIntro from './components/LessonIntro';
 import BurgerProgress from './components/BurgerProgress';
 import WelcomeScreen from './components/WelcomeScreen';
 import AboutScreen from './components/AboutScreen';
+import HowToPlayScreen from './components/HowToPlayScreen';
 
 const App: React.FC = () => {
   const [currentScreen, setCurrentScreen] = useState<Screen>('WELCOME');
@@ -69,7 +70,7 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
-    if (username && currentScreen !== 'WELCOME' && currentScreen !== 'LOGIN' && currentScreen !== 'ABOUT') {
+    if (username && currentScreen !== 'WELCOME' && currentScreen !== 'LOGIN' && currentScreen !== 'ABOUT' && currentScreen !== 'HOW_TO_PLAY') {
       const sync = async () => {
         setIsSyncing(true);
         const success = await cloudService.saveUser(username, { gender, difficulty, progress, history });
@@ -119,7 +120,7 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen max-w-2xl mx-auto flex flex-col shadow-2xl bg-white border-x border-orange-100 relative">
       {/* مؤشر المزامنة */}
-      {username && currentScreen !== 'WELCOME' && currentScreen !== 'LOGIN' && currentScreen !== 'ABOUT' && (
+      {username && currentScreen !== 'WELCOME' && currentScreen !== 'LOGIN' && currentScreen !== 'ABOUT' && currentScreen !== 'HOW_TO_PLAY' && (
         <div className="fixed bottom-4 left-4 z-[200]">
            <div className={`p-2 rounded-full shadow-lg border-2 transition-all flex items-center justify-center bg-white ${
             cloudStatus === 'online' ? 'border-green-200' : 'border-orange-200'
@@ -129,8 +130,15 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {currentScreen === 'WELCOME' && <WelcomeScreen onStart={() => setCurrentScreen('LOGIN')} onAbout={() => setCurrentScreen('ABOUT')} />}
-      {currentScreen === 'ABOUT' && <AboutScreen onBack={() => setCurrentScreen('WELCOME')} />}
+      {currentScreen === 'WELCOME' && (
+        <WelcomeScreen 
+          onStart={() => setCurrentScreen('LOGIN')} 
+          onAbout={() => setCurrentScreen('ABOUT')} 
+          onHowToPlay={() => { audioService.playClick(); setCurrentScreen('HOW_TO_PLAY'); }}
+        />
+      )}
+      {currentScreen === 'HOW_TO_PLAY' && <HowToPlayScreen onBack={() => { audioService.playClick(); setCurrentScreen('WELCOME'); }} />}
+      {currentScreen === 'ABOUT' && <AboutScreen onBack={() => { audioService.playClick(); setCurrentScreen('WELCOME'); }} />}
       {currentScreen === 'LOGIN' && <LoginScreen onLogin={handleLogin} onViewLeaderboard={() => { audioService.playClick(); setCurrentScreen('LEADERBOARD'); }} onAbout={() => setCurrentScreen('ABOUT')} />}
       {currentScreen === 'STORY' && <StoryScreen username={username} gender={gender} onNext={() => { audioService.playClick(); setCurrentScreen('MAP'); }} />}
       {currentScreen === 'LEADERBOARD' && <Leaderboard onBack={() => { audioService.playClick(); username ? (progress.completedStations.length === currentStations.length ? setCurrentScreen('FINAL') : setCurrentScreen('MAP')) : setCurrentScreen('LOGIN'); }} />}

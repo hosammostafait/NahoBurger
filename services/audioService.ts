@@ -14,13 +14,18 @@ class AudioService {
   private currentSource: AudioBufferSourceNode | null = null;
 
   initAudio() {
-    if (!this.audioCtx) {
-      this.audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+    try {
+      if (!this.audioCtx) {
+        this.audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+      }
+      if (this.audioCtx.state === 'suspended') {
+        this.audioCtx.resume();
+      }
+      return this.audioCtx;
+    } catch (e) {
+      console.error("Failed to initialize AudioContext:", e);
+      return null;
     }
-    if (this.audioCtx.state === 'suspended') {
-      this.audioCtx.resume();
-    }
-    return this.audioCtx;
   }
 
   private play(url: string) {
@@ -44,15 +49,22 @@ class AudioService {
   }
 
   async speak(text: string, options: string[] = [], onEnd?: () => void) {
-    if (!process.env.API_KEY) return;
+    const apiKey = process.env.API_KEY;
+    
+    if (!apiKey) {
+      console.error("TTS Error: API_KEY is missing. Please add it to your environment variables.");
+      if (onEnd) onEnd();
+      return;
+    }
 
     this.stop();
 
     try {
       const ctx = this.initAudio();
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      if (!ctx) throw new Error("AudioContext not available");
+
+      const ai = new GoogleGenAI({ apiKey });
       
-      // نصوص مختصرة جداً لسرعة التوليد
       let prompt = `${text}. `;
       if (options.length > 0) {
         const labels = ['أ', 'ب', 'ج', 'د'];
@@ -61,12 +73,13 @@ class AudioService {
         });
       }
 
+      console.log("TTS: Requesting audio for prompt:", prompt.substring(0, 50) + "...");
+
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash-preview-tts",
         contents: [{ parts: [{ text: prompt }] }],
         config: {
           responseModalities: [Modality.AUDIO],
-          // تمت إزالة thinkingConfig لأن موديل TTS لا يدعمه ويسبب خطأ 400
           speechConfig: {
             voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } },
           },
@@ -74,6 +87,7 @@ class AudioService {
       });
 
       const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+      
       if (base64Audio) {
         const audioData = this.base64ToUint8Array(base64Audio);
         const audioBuffer = await this.decodeAudioData(audioData, ctx, 24000, 1);
@@ -91,11 +105,13 @@ class AudioService {
         };
         
         source.start();
-      } else if (onEnd) {
-        onEnd();
+        console.log("TTS: Audio playback started successfully.");
+      } else {
+        console.warn("TTS: No audio data received from API.");
+        if (onEnd) onEnd();
       }
-    } catch (e) {
-      console.error("TTS Error:", e);
+    } catch (e: any) {
+      console.error("TTS Critical Error:", e.message || e);
       if (onEnd) onEnd();
     }
   }
@@ -110,9 +126,11 @@ class AudioService {
   }
 
   private async decodeAudioData(data: Uint8Array, ctx: AudioContext, sampleRate: number, numChannels: number): Promise<AudioBuffer> {
-    const dataInt16 = new Int16Array(data.buffer);
+    // استخدام byteOffset و byteLength لضمان التوافق مع محاذاة الذاكرة (Memory Alignment)
+    const dataInt16 = new Int16Array(data.buffer, data.byteOffset, data.byteLength / 2);
     const frameCount = dataInt16.length / numChannels;
     const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);
+    
     for (let channel = 0; channel < numChannels; channel++) {
       const channelData = buffer.getChannelData(channel);
       for (let i = 0; i < frameCount; i++) {

@@ -4,9 +4,10 @@ import React from 'react';
 interface WelcomeScreenProps {
   onStart: () => void;
   onAbout: () => void;
+  onHowToPlay: () => void;
 }
 
-const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStart, onAbout }) => {
+const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStart, onAbout, onHowToPlay }) => {
   return (
     <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-orange-50 overflow-hidden relative">
       {/* Decorative burger elements */}
@@ -34,15 +35,25 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStart, onAbout }) => {
         <p className="text-orange-500">اجمعها لتصنع الهامبورجر المثالي!</p>
       </div>
       
-      <button 
-        onClick={onStart}
-        className="group relative px-12 py-5 bg-orange-500 text-white font-bold text-2xl rounded-2xl shadow-xl shadow-orange-200 hover:bg-orange-600 active:scale-95 transition-all mb-12"
-      >
-        ابدأ الرحلة 🚀
-        <div className="absolute -top-2 -right-2 bg-yellow-400 text-orange-900 text-sm px-2 py-1 rounded-lg font-black rotate-12 group-hover:rotate-0 transition-transform">
-          مجاناً!
-        </div>
-      </button>
+      <div className="flex flex-col gap-4 w-full max-w-xs mb-12">
+        <button 
+          onClick={onStart}
+          className="group relative px-12 py-5 bg-orange-500 text-white font-bold text-2xl rounded-2xl shadow-xl shadow-orange-200 hover:bg-orange-600 active:scale-95 transition-all"
+        >
+          ابدأ الرحلة 🚀
+          <div className="absolute -top-2 -right-2 bg-yellow-400 text-orange-900 text-sm px-2 py-1 rounded-lg font-black rotate-12 group-hover:rotate-0 transition-transform">
+            مجاناً!
+          </div>
+        </button>
+
+        <button 
+          onClick={onHowToPlay}
+          className="px-8 py-3 bg-white text-orange-600 border-2 border-orange-100 font-black text-lg rounded-2xl shadow-md hover:bg-orange-50 transition-all flex items-center justify-center gap-2"
+        >
+          <span>📖</span>
+          كيفية اللعب؟
+        </button>
+      </div>
       
       <div className="flex flex-col items-center gap-3 w-full max-w-xs">
         <div className="bg-white/60 w-full px-4 py-2 rounded-2xl border border-orange-100 shadow-sm text-slate-600 font-black text-[13px] flex items-center justify-center gap-3 animate-in fade-in slide-in-from-bottom-2 duration-500">
@@ -52,10 +63,6 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStart, onAbout }) => {
         <div className="bg-white/60 w-full px-4 py-2 rounded-2xl border border-orange-100 shadow-sm text-slate-600 font-black text-[13px] flex items-center justify-center gap-3 animate-in fade-in slide-in-from-bottom-2 duration-700">
           <span className="text-lg">📝</span>
           <span>300 سؤال متنوع وتفاعلي</span>
-        </div>
-        <div className="bg-white/60 w-full px-4 py-2 rounded-2xl border border-orange-100 shadow-sm text-slate-600 font-black text-[13px] flex items-center justify-center gap-3 animate-in fade-in slide-in-from-bottom-2 duration-1000">
-          <span className="text-lg">💡</span>
-          <span>شرح وافٍ لكل قاعدة نحوية</span>
         </div>
         
         <button 
